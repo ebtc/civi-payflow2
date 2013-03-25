@@ -6,10 +6,10 @@ $payflow_query = "USER[8]=tmaitest" .
 "&TENDER[1]=C".
 "&TRXTYPE[1]=R".
 "&ACCT[16]=4012888888881881".
-"&CVV2[3]=617".
-"&EXPDATE[4]=0214".
+"&CVV2[3]=123".
+"&EXPDATE[4]=0314".
 "&ACCTTYPE[4]=Visa".
-"&AMT[1]=1".
+"&AMT=99.00".
 "&CURRENCY[3]=USD".
 "&FIRSTNAME[3]=Bil".
 "&LASTNAME[3]=Bob".
@@ -19,7 +19,7 @@ $payflow_query = "USER[8]=tmaitest" .
 "&ZIP[5]=12345".
 "&COUNTRY[2]=US".
 "&EMAIL[16]=pasd@walger.name".
-"&CUSTIP[14]=79.205.229.163".
+"&CUSTIP[14]=79.205.229.123".
 "&COMMENT1[0]=".
 "&INVNUM[32]=7e7c99567fa207ce58891bac6daa5566".
 "&ORDERDESC[45]=Online+Contribution%3A+Payflow+pro+recur+test".
@@ -28,10 +28,10 @@ $payflow_query = "USER[8]=tmaitest" .
 "&OPTIONALTRX[1]=S".
 "&OPTIONALTRXAMT[1]=1".
 "&ACTION[1]=A".
-"&PROFILENAME[19]=RegularContribution".
-"&TERM[1]=3".
-"&START[8]=04252013".
-"&PAYPERIOD[4]=MONT";
+"&PROFILENAME=RegularContribution".
+"&TERM=3".
+"&START=04252013".
+"&PAYPERIOD=MONT";
 
 $submiturl = 'https://pilot-payflowpro.paypal.com';
 // get data ready for API
