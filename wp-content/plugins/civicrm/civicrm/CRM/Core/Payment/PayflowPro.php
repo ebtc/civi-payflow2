@@ -289,6 +289,7 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
      * Payment succesfully sent to gateway - process the response now
      */
 
+    CRM_Core_Error::debug_var('$responseData', $responseData, false);
     $result = strstr($responseData, "RESULT");
     $nvpArray = array();
     while (strlen($result)) {
@@ -305,7 +306,7 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
     // get the result code to validate.
     $result_code = $nvpArray['RESULT'];
 
-    //CRM_Core_Error::debug('$nvpArray', $nvpArray);
+    CRM_Core_Error::debug_var('$nvpArray', $nvpArray, false);
   
 
     switch ($result_code) {
