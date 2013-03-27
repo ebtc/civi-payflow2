@@ -6,7 +6,8 @@
    | Licensed to CiviCRM under the Academic Free License version 3.0            |
    |                                                                            |
    | Written & Contributed by Eileen McNaughton - 2009                          |
-   +---------------------------------------------------------------------------+
+   | Modifications: Paul Walger & Thomas Hochstetter (www.ebtc-media.org), 2013 |
+   +----------------------------------------------------------------------------+
   */
 class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
   // (not used, implicit in the API, might need to convert?)
