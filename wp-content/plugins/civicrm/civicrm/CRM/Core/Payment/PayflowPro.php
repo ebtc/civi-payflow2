@@ -88,6 +88,23 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
      * Create the array of variables to be sent to the processor from the $params array
      * passed into this function
      */
+    
+//START.tho.270313: expand the custom fields and include them in comments
+	$comment = "";
+	foreach($_POST as $key => $value) {
+		if(substr($key,0,6)=="custom") {
+                    if(is_array($value)) {
+                        foreach($value as $vk=>$vv) {
+                            $comment .= $vv.', ';
+                        }
+                    } else {
+                        $comment .= $value.', ';
+                    }
+		}
+	}
+	if($comment == "")
+		$comment = urlencode($params['contributionType_accounting_code']);
+//END.tho
 
     $payflow_query_array = array(
       'USER' => $user,
@@ -116,7 +133,10 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
       'COUNTRY' => urlencode($params['country']),
       'EMAIL' => $params['email'],
       'CUSTIP' => urlencode($params['ip_address']),
-      'COMMENT1' => urlencode($params['contributionType_accounting_code']),
+//START.tho.270313
+      //'COMMENT1' => urlencode($params['contributionType_accounting_code']),
+      'COMMENT1' => $comment,
+//END.tho
       //'COMMENT2' => $mode,
       'INVNUM' => urlencode($params['invoiceID']),
       'ORDERDESC' => urlencode($params['description']),
@@ -138,7 +158,10 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
       //Amount of the initial Transaction. Required
       $payflow_query_array['ACTION'] = 'A';
       //A for add recurring (M-modify,C-cancel,R-reactivate,I-inquiry,P-payment
-      $payflow_query_array['PROFILENAME'] = urlencode('RegularContribution');
+//START.tho.270313
+      //$payflow_query_array['PROFILENAME'] = urlencode('RegularContribution');
+      $payflow_query_array['PROFILENAME'] = $params['billing_last_name'].$params['billing_first_name'].' '.date('m-d-Y');
+//END.tho.270313
       //A for add recurring (M-modify,C-cancel,R-reactivate,I-inquiry,P-payment
       if ($params['installments'] > 0) {
         $payflow_query_array['TERM'] = $params['installments'] - 1;
