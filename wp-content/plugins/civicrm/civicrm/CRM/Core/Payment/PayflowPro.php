@@ -389,7 +389,10 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
     //copied from Eway but not working and not really sure it should!
     $contribution = new CRM_Contribute_DAO_Contribution();
     $contribution->invoice_id = $invoiceId;
-    return $contribution->find();
+//START.tho.270313: disable for now, always true
+    //return $contribution->find();
+    return false;
+//END.tho.270313
   }
 
   /*
