@@ -235,9 +235,7 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
             (1 * $payflow_query_array['TERM']),
             date("d"), date("Y")
           );
-          $payflow_query_array['START'] = date('mdY', $params['next_sched_contribution'
-            ]
-          );
+          $payflow_query_array['START'] = date('mdY', $params['next_sched_contribution']);
           $payflow_query_array['PAYPERIOD'] = "MONT";
           $params['frequency_unit'] = "month";
           $params['frequency_interval'] = 1;
