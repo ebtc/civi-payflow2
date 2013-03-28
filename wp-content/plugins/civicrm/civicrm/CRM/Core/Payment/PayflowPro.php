@@ -91,16 +91,24 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
      */
     
 //START.tho.270313: expand the custom fields and include them in comments
-	$comment = "";
+	$comment1 = "";
+	$comment2 = "";
 	foreach($_POST as $key => $value) {
-		if(substr($key,0,6)=="custom") {
-                    if(is_array($value)) {
-                        foreach($value as $vk=>$vv) {
-                            $comment .= $vv.', ';
-                        }
-                    } else {
-                        $comment .= $value.', ';
-                    }
+		//Specific to TMAI.org
+		switch($key) {
+			//TC (custom field from profile)
+			case 'custom_3' : 
+				$comment1 .= !strlen($comment1) ? $value : ', '.$value;
+			break;
+			//Need (custom field from profile)
+			case 'custom_4' : 
+				$comment1 .= !strlen($comment1) ? $value : ', '.$value;
+			break;
+			//Comments (custom field from profile)
+			case 'custom_5' : 
+				$comment2 .= !strlen($comment2) ? $value : ', '.$value;
+			break;
+			default :
 		}
 	}
 	if($comment == "")
@@ -136,9 +144,10 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
       'CUSTIP' => urlencode($params['ip_address']),
 //START.tho.270313
       //'COMMENT1' => urlencode($params['contributionType_accounting_code']),
-      'COMMENT1' => $comment,
-//END.tho
+      'COMMENT1' => $comment1,
       //'COMMENT2' => $mode,
+      'COMMENT2' => $comment2,
+//END.tho
       'INVNUM' => urlencode($params['invoiceID']),
       'ORDERDESC' => urlencode($params['description']),
       'VERBOSITY' => 'MEDIUM',
@@ -154,8 +163,8 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
      //   CRM_Core_Error::debug ('it is a recurring one');
         
       $payflow_query_array['TRXTYPE'] = 'R';
-      $payflow_query_array['OPTIONALTRX'] = 'S';
-      $payflow_query_array['OPTIONALTRXAMT'] = $params['amount'];
+      //$payflow_query_array['OPTIONALTRX'] = 'S';
+      //$payflow_query_array['OPTIONALTRXAMT'] = $params['amount'];
       //Amount of the initial Transaction. Required
       $payflow_query_array['ACTION'] = 'A';
       //A for add recurring (M-modify,C-cancel,R-reactivate,I-inquiry,P-payment
@@ -228,8 +237,8 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
           break;
 
         case '1 month':
-          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m") + 1,
-            date("d"), date("Y")
+          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m"), //START.tho.280313: date() + 1 del, so payment starts today
+            date("d") + 1, date("Y") //START.tho.280313: day + 1, so API is happy
           );
           $params['end_date'] = mktime(0, 0, 0, date("m") +
             (1 * $payflow_query_array['TERM']),
@@ -285,7 +294,14 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
           break;
       }
     }
-    
+
+/*   
+    CRM_Core_Error::debug($params);
+    CRM_Core_Error::debug($payflow_query_array);
+    CRM_Core_Error::debug($payflow_query);
+    CRM_Core_Error::debug($_POST);
+    die();
+*/    
     
     CRM_Utils_Hook::alterPaymentProcessorParams($this, $params, $payflow_query_array);
     
@@ -681,4 +697,3 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
     //RT0000000001
   }
 }
-
