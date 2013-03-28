@@ -689,7 +689,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
             }
           
         } else {
-          CRM_Core_Error::Fatal("Error finding processor $id");
+            CRM_Core_Error::Fatal("Error finding processor $id");
         }
         
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update .getPaymentProcessorInfo('. $id. ')', $ret, false);
@@ -718,9 +718,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $payflow_query', $payflow_query, false);
         $responseData = payflowpro_submit_transaction($info['url'], $payflow_query);
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $responseData', $responseData, false);
-        /*
-        * Payment succesfully sent to gateway - process the response now
-        */
+
         $result = strstr($responseData, "RESULT");
         $nvpArray = array();
         while (strlen($result)) {
@@ -738,9 +736,19 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         $result_code = $nvpArray['RESULT'];
 
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $result_code', $result_code, false);
-
-        //RESPMSG=Invalid Profile ID: Invalid recurring profile ID
-        //RT0000000001
+        switch ($nvpArray['STATUS']) {
+            case 'ACTIVE':
+                return 5;//IN PROGRESS
+            case 'VENDOR INACTIVE':
+                return 3; //Cancelled
+            case 'DEACTIVATED BY MERCHANT':
+                return 3;//Cancelled
+            case 'EXPIRED':
+                return 1;//Completed
+            case 'TOO MANY FAILURES':
+                return 4;//Failed
+        }
+        
     }
 
   function returnResult() {
