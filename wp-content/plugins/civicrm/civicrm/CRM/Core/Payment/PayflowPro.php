@@ -679,7 +679,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update .getPaymentProcessorInfo('. $id. ')', $ret, false);
         
-        return ret;
+        return $ret;
     }
     private function getStatus($info, $recurringProfileID)
     {
