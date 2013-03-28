@@ -659,17 +659,12 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         
         $r = CRM_Core_DAO::executeQuery("SELECT id,trxn_id,invoice_id,payment_processor_id FROM civicrm_contribution_recur WHERE contribution_status_id='2' OR contribution_status_id='5'");
         while ($r->fetch()) {
-            CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
-            $proc = $this->getPaymentProcessorInfo($r->payment_processor_id);
-            CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update get recur info', false);
-            
-            $info = $this->getRecurInfo($proc, $this->getProfileID($r->invoice_id));
-            
-            CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update ok', false);
+            $info = $this->getRecurInfo($this->getPaymentProcessorInfo($r->payment_processor_id), $this->getProfileID($r->invoice_id));
             $status = $info['status'];
             $fail = $info['failed_payments'];
             $next = $info['next'];
             $left = $info['left']; // it shouldn't be assigned to cycle day
+            
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
             CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $status', $info, false);
             if($status != 2) {
@@ -713,21 +708,14 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
     }
     private function getRecurInfo($info, $recurringProfileID)
     {
-        CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $info', $info, false);
-        CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $info', $recurringProfileID, false);
         $payflow_query_array = array(
         'USER' => $info['user'],
         'VENDOR' => $info['username'],
         'PARTNER' => $info['signature'],
         'PWD' => $info['password'],
-        // C - Direct Payment using credit card
         'TENDER' => 'C',
-        // A - Authorization, S - Sale
         'TRXTYPE' => 'R',
         'ACTION' => 'I',
-        //A for add recurring
-        //(M-modify,C-cancel,R-reactivate,
-        //I-inquiry,P-payment
         'ORIGPROFILEID' => $recurringProfileID
         );
 
