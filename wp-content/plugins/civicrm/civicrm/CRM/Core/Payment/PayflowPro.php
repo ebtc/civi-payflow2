@@ -640,15 +640,14 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         WHERE contribution_status_id='2' OR contribution_status_id='5'");
         while ($r->fetch()) {
             $info = $this->getRecurInfo($this->getPaymentProcessorInfo($r->payment_processor_id), $this->getProfileID($r->invoice_id));
-            $status = $info['status'];
-            
+
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
             CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $status', $info, false);
-            if($ret['result'] == '0' && $status != 2) {
+            if($ret['result'] == '0' && $info['status'] != 2) {
                 $fail = $info['failed_payments'];
                 $next = $info['next'];
                 $left = $info['left']; // it shouldn't be assigned to cycle day
-                
+                $status = $info['status'];
                 CRM_Core_DAO::executeQuery(
                 "UPDATE 
                     civicrm_contribution_recur 
