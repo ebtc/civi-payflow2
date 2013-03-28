@@ -660,8 +660,8 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         $r = CRM_Core_DAO::executeQuery("SELECT id,trxn_id,invoice_id,payment_processor_id FROM civicrm_contribution_recur WHERE contribution_status_id='2' OR contribution_status_id='5'");
         while ($r->fetch()) {
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
-            $info = $this->getInfo($this->getPaymentProcessorInfo($r->payment_processor_id), 
-                                     $this->getProfileID($r->invoice_id));
+            $proc = $this->getPaymentProcessorInfo($r->payment_processor_id);
+            $info = $this->getInfo($proc, $this->getProfileID($r->invoice_id));
             $status = $info['status'];
             $fail = $info['failed_payments'];
             $next = $info['next'];
