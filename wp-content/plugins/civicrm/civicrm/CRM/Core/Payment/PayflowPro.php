@@ -635,11 +635,6 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
     var $returnMessages = array();
     var $returnError = 0;
     
-    var $user = "";
-    var $username = "";
-    var $signature = "";
-    var $password = "";
-    var $url = "";
     public function __construct($params) {
 
         foreach ($params as $name => $value) {
@@ -656,19 +651,43 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         if (!defined('CURLOPT_SSLCERT')) {
             CRM_Core_Error::fatal(ts('PayFlowPro requires curl with SSL support'));
         }
-        //TODO: get the configuration
-        //TODO: foreach recurring stuff in civicrm do getStatus and update
-
+        $r = CRM_Core_DAO::executeQuery("SELECT id,trxn_id,invoice_id,payment_processor_id FROM civicrm_contribution_recur WHERE contribution_status_id='2'");
+        while ($r->fetch()) {
+            $info = getPaymentProcessorInfo($r->payment_processor_id);
+            $status = getStatus($info, $r->trxn_id)
+        }
     
         return $this->returnResult();
     }
-    private function getStatus($recurringProfileID)
+    
+    private function getPaymentProcessorInfo($id)
+    {
+        $ret = array();
+        
+        $r = CRM_Core_DAO::executeQuery("SELECT user_name,password,signature,url_site FROM civicrm_payment_processor WHERE id = '$id'");
+        if(!empty($r)) {
+            $r->fetch();
+            
+            $ret['url'] = $r->url_site;
+            $ret['username'] =  $r->user_name;
+            $ret['signature'] =  $r->signature;
+            $ret['password'] =  $r->password;
+          
+        } else {
+          CRM_Core_Error::Fatal("Error finding processor $id");
+        }
+        
+        CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update .getPaymentProcessorInfo('. $id. ')', $ret, false);
+        
+        return ret;
+    }
+    private function getStatus($info, $recurringProfileID)
     {
         $payflow_query_array = array(
-        'USER' => $this->user,
-        'VENDOR' => $this->username,
-        'PARTNER' => $this->signature,
-        'PWD' => $this->password,
+        'USER' => $info['user'],
+        'VENDOR' => $info['username'],
+        'PARTNER' => $info['signature'],
+        'PWD' => $info['password'],
         // C - Direct Payment using credit card
         'TENDER' => 'C',
         // A - Authorization, S - Sale
@@ -683,7 +702,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
 
         $payflow_query = payflowpro_convert_to_nvp($payflow_query_array);
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $payflow_query', $payflow_query, false);
-        $responseData = payflowpro_submit_transaction($this->url, $payflow_query);
+        $responseData = payflowpro_submit_transaction($info['url'], $payflow_query);
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $responseData', $responseData, false);
         /*
         * Payment succesfully sent to gateway - process the response now
