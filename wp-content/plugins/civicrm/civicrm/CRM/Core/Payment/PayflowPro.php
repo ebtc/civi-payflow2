@@ -171,7 +171,7 @@ function payflowpro_submit_transaction($submiturl, $payflow_query) {
 function payflow_date_to_iso($p)//03292013
 {
     return substr($p, 4, 4) . "-" . substr($p, 2, 2) . "-" . substr($p, 0, 2);
-
+}
   
 class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
   // (not used, implicit in the API, might need to convert?)
