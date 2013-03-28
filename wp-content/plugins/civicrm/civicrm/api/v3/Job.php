@@ -503,10 +503,9 @@ function civicrm_api3_job_cleanup( $params ) {
  *
  *
  */
-function civicrm_api3_job_geocode($params) {
+function civicrm_api3_job_payflowpro($params) {
 
-  // available params:
-  // 'start=', 'end=', 'geocoding=', 'parse=', 'throttle='
+  // available params: currently none
 
   require_once 'CRM/Core/Payment/PayflowPro';
   $gc = new CRM_CRM_Core_Payment_PayflowPro_Update($params);

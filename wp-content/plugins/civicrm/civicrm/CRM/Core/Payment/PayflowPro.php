@@ -702,7 +702,7 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
 /**
  * A PHP cron script
  */
-class CRM_Utils_Address_BatchUpdate {
+class CRM_CRM_Core_Payment_PayflowPro_Update {
 
   var $returnMessages = array();
   var $returnError = 0;
@@ -717,8 +717,8 @@ class CRM_Utils_Address_BatchUpdate {
   }
 
   public function run() {
-
     $config = &CRM_Core_Config::singleton();
+    CRM_Core_Error::debug_log_message('run CRM_CRM_Core_Payment_PayflowPro_Update', false);
     return $this->returnResult();
   }
 
