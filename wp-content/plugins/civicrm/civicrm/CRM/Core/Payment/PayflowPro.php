@@ -523,8 +523,16 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
         $params['trxn_result_code'] = $nvpArray['AUTHCODE'] . "-Cvv2:" . $nvpArray['CVV2MATCH'] . "-avs:" . $nvpArray['AVSADDR'];
 
         if ($params['is_recur'] == TRUE) {
-          $params['recur_trxn_id'] = $nvpArray['PROFILEID']; //'trxn_id' is varchar(255) field. returned value is length 12
+            $params['recur_trxn_id'] = $nvpArray['PROFILEID']; 
+            //because we need the profile id
+            CRM_Core_DAO::executeQuery("
+            INSERT INTO civicrm_payflowpro_recur (
+            trxn_id, profile_id
+            ) VALUES ('$params['trxn_id']', '$params['recur_trxn_id']')");
         }
+  
+       
+
         return $params;
 
       case 1:
@@ -654,12 +662,16 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         $r = CRM_Core_DAO::executeQuery("SELECT id,trxn_id,invoice_id,payment_processor_id FROM civicrm_contribution_recur WHERE contribution_status_id='2'");
         while ($r->fetch()) {
             $info = $this->getPaymentProcessorInfo($r->payment_processor_id);
-            $status = $this->getStatus($info, $r->trxn_id);
+            $status = $this->getStatus($info, getProfileID($r->trxn_id));
         }
     
         return $this->returnResult();
     }
-    
+    private function getProfileID($trxn)
+    {
+        return CRM_Core_DAO::singleValueQuery("SELECT profile_id FROM civicrm_payflowpro_recur WHERE trxn_id = '$trxn'");
+      
+    }
     private function getPaymentProcessorInfo($id)
     {
         $ret = array();
