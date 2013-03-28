@@ -731,9 +731,6 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         $ret = array();
         // get the result code to validate.
         $ret['result'] = $nvpArray['RESULT'];
-
-        CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $result_code', $result_code, false);
-        
       
         if($ret['result'] != '0') return $ret;
         
