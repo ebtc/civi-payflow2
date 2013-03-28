@@ -668,12 +668,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
             $left = $info['left']; // it shouldn't be assigned to cycle day
             CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $status', $info, false);
             if($status != 2) {
-                CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution_recur SET 
-                contribution_status_id = $status, 
-                failure_count = $fail, 
-                next_sched_contribution = '$next',
-                cycle_day = $left
-                WHERE id = '".$r->id."'");
+                CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution_recur SET contribution_status_id = '$status', failure_count = '$fail', next_sched_contribution = '$next', cycle_day ='$left' WHERE id = '".$r->id."'");
                 CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution SET contribution_status_id = $status WHERE contribution_recur_id = '".$r->id."'");
             }
         }
@@ -753,6 +748,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $result_code', $result_code, false);
         
         $ret = array();
+        
         $ret['failed_payments'] = $nvpArray['NUMFAILPAYMENTS'];
         $ret['left'] = $nvpArray['PAYMENTSLEFT'];
         $ret['next'] = payflow_date_to_iso($nvpArray['NEXTPAYMENT']);
@@ -779,6 +775,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
                     break;
             }
         }
+        
         return $ret;
     }
 
