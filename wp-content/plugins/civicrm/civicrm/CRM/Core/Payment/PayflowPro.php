@@ -664,7 +664,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
     {
         $ret = array();
         
-        $r = CRM_Core_DAO::executeQuery("SELECT user_name,password,signature,url_site FROM civicrm_payment_processor WHERE id = '$id'");
+        $r = CRM_Core_DAO::executeQuery("SELECT user_name,password,signature,url_site,subject FROM civicrm_payment_processor WHERE id = '$id'");
         if(!empty($r)) {
             $r->fetch();
             
@@ -672,6 +672,11 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
             $ret['username'] =  $r->user_name;
             $ret['signature'] =  $r->signature;
             $ret['password'] =  $r->password;
+            if (!$r->subject) {
+                $ret['user'] = $r->user_name;
+            } else {
+                $ret['user'] = $r->subject
+            }
           
         } else {
           CRM_Core_Error::Fatal("Error finding processor $id");
