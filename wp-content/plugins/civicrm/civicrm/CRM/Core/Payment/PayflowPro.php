@@ -662,7 +662,9 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
             $proc = $this->getPaymentProcessorInfo($r->payment_processor_id);
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update get recur info', false);
+            
             $info = $this->getRecurInfo($proc, $this->getProfileID($r->invoice_id));
+            
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update ok', false);
             $status = $info['status'];
             $fail = $info['failed_payments'];
@@ -678,9 +680,9 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
     
         return $this->returnResult();
     }
-    private function getProfileID($trxn)
+    private function getProfileID($invoice)
     {
-        return CRM_Core_DAO::singleValueQuery("SELECT profile_id FROM civicrm_payflowpro_recur WHERE trxn_id = '$trxn'");
+        return CRM_Core_DAO::singleValueQuery("SELECT profile_id FROM civicrm_payflowpro_recur WHERE invoice_id = '$invoice'");
       
     }
     private function getPaymentProcessorInfo($id)
