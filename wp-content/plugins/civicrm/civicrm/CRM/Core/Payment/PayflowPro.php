@@ -191,8 +191,8 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
       //limit. Retry
       //attempts occur until the term is complete.
       // $payflow_query_array['RETRYNUMDAYS'] = (not set as can't assume business rule
-      $ad = $params['frequency_interval']. " ". $params['frequency_unit'];
-      switch ($ad) {
+      $interval = $params['frequency_interval']. " ". $params['frequency_unit'];
+      switch ($interval) {
         case '1 week':
           $params['next_sched_contribution'] = mktime(0, 0, 0, date("m"), date("d") + 7,
             date("Y")
@@ -697,3 +697,37 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
     //RT0000000001
   }
 }
+
+
+/**
+ * A PHP cron script
+ */
+class CRM_Utils_Address_BatchUpdate {
+
+  var $returnMessages = array();
+  var $returnError = 0;
+
+  public function __construct($params) {
+
+    foreach ($params as $name => $value) {
+      $this->$name = $value;
+    }
+
+    // fixme: more params verification
+  }
+
+  public function run() {
+
+    $config = &CRM_Core_Config::singleton();
+    return $this->returnResult();
+  }
+
+
+  function returnResult() {
+    $result             = array();
+    $result['is_error'] = $this->returnError;
+    $result['messages'] = implode("", $this->returnMessages);
+    return $result;
+  }
+}
+

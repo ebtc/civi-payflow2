@@ -489,3 +489,35 @@ function civicrm_api3_job_cleanup( $params ) {
     CRM_Utils_System::flushCache( );
   }
 }
+
+/**
+ * Updates status of recurring payments in PayFlow Pro
+ *
+ * @param  array      $params (reference ) input parameters
+ *
+ * @return array API Result Array
+ * {@getfields contact_geocode}
+ *
+ * @static void
+ * @access public
+ *
+ *
+ */
+function civicrm_api3_job_geocode($params) {
+
+  // available params:
+  // 'start=', 'end=', 'geocoding=', 'parse=', 'throttle='
+
+  require_once 'CRM/Core/Payment/PayflowPro';
+  $gc = new CRM_CRM_Core_Payment_PayflowPro_Update($params);
+
+
+  $result = $gc->run();
+
+  if ($result['is_error'] == 0) {
+    return civicrm_api3_create_success($result['messages']);
+  }
+  else {
+    return civicrm_api3_create_error($result['messages']);
+  }
+}
