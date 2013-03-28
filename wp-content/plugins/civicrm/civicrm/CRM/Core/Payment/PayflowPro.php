@@ -653,8 +653,8 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         }
         $r = CRM_Core_DAO::executeQuery("SELECT id,trxn_id,invoice_id,payment_processor_id FROM civicrm_contribution_recur WHERE contribution_status_id='2'");
         while ($r->fetch()) {
-            $info = getPaymentProcessorInfo($r->payment_processor_id);
-            $status = getStatus($info, $r->trxn_id);
+            $info = $this->getPaymentProcessorInfo($r->payment_processor_id);
+            $status = $this->getStatus($info, $r->trxn_id);
         }
     
         return $this->returnResult();
