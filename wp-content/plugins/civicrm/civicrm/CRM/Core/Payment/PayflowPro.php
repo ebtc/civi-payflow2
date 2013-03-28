@@ -530,8 +530,7 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
             CRM_Core_DAO::executeQuery("INSERT INTO civicrm_payflowpro_recur (trxn_id, profile_id) VALUES ('$trxn', '$profile')");*/
         }
   
-       
-
+        CRM_Core_Error::debug_var('$params', $params, false);
         return $params;
 
       case 1:
