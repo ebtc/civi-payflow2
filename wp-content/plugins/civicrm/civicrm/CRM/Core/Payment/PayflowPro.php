@@ -711,8 +711,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         //A for add recurring
         //(M-modify,C-cancel,R-reactivate,
         //I-inquiry,P-payment
-        'ORIGPROFILEID' => $recurringProfileID,
-        'PAYMENTHISTORY' => 'Y',
+        'ORIGPROFILEID' => $recurringProfileID
         );
 
         $payflow_query = payflowpro_convert_to_nvp($payflow_query_array);
