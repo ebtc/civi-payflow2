@@ -644,22 +644,18 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
             
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
             CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $status', $info, false);
-            if($status != 2) {
-            
-                $set = "SET contribution_status_id = '$status'";
-                if(isset($info['failed_payments'])) {
-                    $set += ", failure_count = '" . $info['failed_payments'] . "'";
-                }
-                if(isset($info['next'])) {
-                    $set += ", failure_count = '" . $info['next'] . "'";
-                }
-                if(isset($info['left'])) {
-                    $set += ", failure_count = '" . $info['left'] . "'";
-                }
+            if($ret['result'] == '0' && $status != 2) {
+                $fail = $info['failed_payments'];
+                $next = $info['next'];
+                $left = $info['left']; // it shouldn't be assigned to cycle day
                 
                 CRM_Core_DAO::executeQuery(
-                "UPDATE civicrm_contribution_recur 
-                $set 
+                "UPDATE 
+                    civicrm_contribution_recur 
+                SET contribution_status_id = '$status', 
+                    failure_count = '$fail', 
+                    next_sched_contribution = '$next', 
+                    cycle_day ='$left' 
                 WHERE id = '".$r->id."'");
                 
                 CRM_Core_DAO::executeQuery(
@@ -733,45 +729,37 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
             $nvpArray[$keyval] = $valval;
             $result = substr($result, $valuepos + 1, strlen($result));
         }
+        $ret = array();
         // get the result code to validate.
-        $result_code = $nvpArray['RESULT'];
+        $ret['result'] = $nvpArray['RESULT'];
 
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $result_code', $result_code, false);
         
-        $ret = array();
-        if(isset($nvpArray['NUMFAILPAYMENTS'])) {
-            $ret['failed_payments'] = $nvpArray['NUMFAILPAYMENTS'];
-        }
-        if(isset($nvpArray['PAYMENTSLEFT'])) {
-            $ret['left'] = $nvpArray['PAYMENTSLEFT'];
-        }
-        if(isset($nvpArray['NEXTPAYMENT'])) {
-            $ret['next'] = $nvpArray['NEXTPAYMENT'];
-        }
+      
+        if($ret['result'] != '0') return $ret;
         
-        if(!isset($nvpArray['STATUS'])) {
-            $ret['status'] = 2;//pending
-        } else {
-        
-            switch ($nvpArray['STATUS']) {
-                case 'ACTIVE':
-                    $ret['status'] = 5;//IN PROGRESS
-                    break;
-                case 'VENDOR INACTIVE':
-                    $ret['status'] = 3; //Cancelled
-                    break;
-                case 'DEACTIVATED BY MERCHANT':
-                    $ret['status'] = 3;//Cancelled
-                    break;
-                case 'EXPIRED':
-                    $ret['status'] = 1;//Completed
-                    break;
-                case 'TOO MANY FAILURES':
-                    $ret['status'] = 4;//Failed
-                    break;
-            }
+        $ret['failed_payments'] = $nvpArray['NUMFAILPAYMENTS'];
+        $ret['left'] = $nvpArray['PAYMENTSLEFT'];
+        $ret['next'] = $nvpArray['NEXTPAYMENT'];
+
+        switch ($nvpArray['STATUS']) {
+            case 'ACTIVE':
+                $ret['status'] = 5;//IN PROGRESS
+                break;
+            case 'VENDOR INACTIVE':
+                $ret['status'] = 3; //Cancelled
+                break;
+            case 'DEACTIVATED BY MERCHANT':
+                $ret['status'] = 3;//Cancelled
+                break;
+            case 'EXPIRED':
+                $ret['status'] = 1;//Completed
+                break;
+            case 'TOO MANY FAILURES':
+                $ret['status'] = 4;//Failed
+                break;
         }
-        
+
         return $ret;
     }
 
