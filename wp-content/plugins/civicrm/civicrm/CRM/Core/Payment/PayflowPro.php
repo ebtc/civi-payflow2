@@ -522,7 +522,7 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
         //'trxn_id' is varchar(255) field. returned value is length 12
         $params['trxn_result_code'] = $nvpArray['AUTHCODE'] . "-Cvv2:" . $nvpArray['CVV2MATCH'] . "-avs:" . $nvpArray['AVSADDR'];
 
-        if ($params['is_recur'] == TRUE) {
+        if ($params['is_recur'] == '1') {
             $params['trxn_id'] = $nvpArray['PROFILEID'];
             /*$trxn = $nvpArray['PNREF'] . $nvpArray['TRXPNREF'];
             $profile = $nvpArray['PROFILEID'];
