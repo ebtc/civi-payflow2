@@ -641,19 +641,25 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         while ($r->fetch()) {
             $info = $this->getRecurInfo($this->getPaymentProcessorInfo($r->payment_processor_id), $this->getProfileID($r->invoice_id));
             $status = $info['status'];
-            $fail = $info['failed_payments'];
-            $next = $info['next'];
-            $left = $info['left']; // it shouldn't be assigned to cycle day
             
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
             CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $status', $info, false);
             if($status != 2) {
+            
+                $set = "SET contribution_status_id = '$status'";
+                if(isset($info['failed_payments'])) {
+                    $set += ", failure_count = '" . $info['failed_payments'] . "'";
+                }
+                if(isset($info['next'])) {
+                    $set += ", failure_count = '" . $info['next'] . "'";
+                }
+                if(isset($info['left'])) {
+                    $set += ", failure_count = '" . $info['left'] . "'";
+                }
+                
                 CRM_Core_DAO::executeQuery(
                 "UPDATE civicrm_contribution_recur 
-                SET contribution_status_id = '$status', 
-                failure_count = '$fail', 
-                next_sched_contribution = '$next', 
-                cycle_day ='$left' 
+                $set 
                 WHERE id = '".$r->id."'");
                 
                 CRM_Core_DAO::executeQuery(
@@ -733,10 +739,15 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $result_code', $result_code, false);
         
         $ret = array();
-        
-        $ret['failed_payments'] = $nvpArray['NUMFAILPAYMENTS'];
-        $ret['left'] = $nvpArray['PAYMENTSLEFT'];
-        $ret['next'] = payflow_date_to_iso($nvpArray['NEXTPAYMENT']);
+        if(isset($nvpArray['NUMFAILPAYMENTS'])) {
+            $ret['failed_payments'] = $nvpArray['NUMFAILPAYMENTS'];
+        }
+        if(isset($nvpArray['PAYMENTSLEFT'])) {
+            $ret['left'] = $nvpArray['PAYMENTSLEFT'];
+        }
+        if(isset($nvpArray['NEXTPAYMENT'])) {
+            $ret['next'] = $nvpArray['NEXTPAYMENT'];
+        }
         
         if(!isset($nvpArray['STATUS'])) {
             $ret['status'] = 2;//pending
