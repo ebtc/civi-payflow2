@@ -675,7 +675,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
             if (!$r->subject) {
                 $ret['user'] = $r->user_name;
             } else {
-                $ret['user'] = $r->subject
+                $ret['user'] = $r->subject;
             }
           
         } else {
