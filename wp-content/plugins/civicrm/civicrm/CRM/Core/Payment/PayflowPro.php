@@ -369,14 +369,9 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
           break;
 
         case '2 weeks':
-          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m"), date("d") + 14, date("Y")
-          );
-          $params['end_date'] = mktime(0, 0, 0, date("m"), date("d") + (14 * $payflow_query_array['TERM'])
-            , date("Y ")
-          );
-          $payflow_query_array['START'] = date('mdY', $params['next_sched_contribution'
-            ]
-          );
+          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m"), date("d") + 14, date("Y"));
+          $params['end_date'] = mktime(0, 0, 0, date("m"), date("d") + (14 * $payflow_query_array['TERM']), date("Y "));
+          $payflow_query_array['START'] = date('mdY', $params['next_sched_contribution']);
           $payflow_query_array['PAYPERIOD'] = "BIWK";
           $params['frequency_unit'] = "week";
           $params['frequency_interval'] = 2;
@@ -524,10 +519,10 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
 
         if ($params['is_recur'] == '1') {
             $params['trxn_id'] = $nvpArray['PROFILEID'];
-            $trxn =  $params['invoiceID'];
+            $invoice =  $params['invoiceID'];
             $profile = $nvpArray['PROFILEID'];
             //because we need the profile id
-            CRM_Core_DAO::executeQuery("INSERT INTO civicrm_payflowpro_recur (trxn_id, profile_id) VALUES ('$trxn', '$profile')");
+            CRM_Core_DAO::executeQuery("INSERT INTO civicrm_payflowpro_recur (invoice_id, profile_id) VALUES ('$invoice', '$profile')");
         }
   
         CRM_Core_Error::debug_var('$params', $params, false);
@@ -659,9 +654,10 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         }
         $r = CRM_Core_DAO::executeQuery("SELECT id,trxn_id,invoice_id,payment_processor_id FROM civicrm_contribution_recur WHERE contribution_status_id='2' OR contribution_status_id='5'");
         while ($r->fetch()) {
-            $info = $this->getPaymentProcessorInfo($r->payment_processor_id);
-            $status = $this->getStatus($info, $this->getProfileID($r->invoice_id));
-            CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $status', $status, false);
+            $info = $this->getInfo($this->getPaymentProcessorInfo($r->payment_processor_id), 
+                                     $this->getProfileID($r->invoice_id));
+            $status = $info['status'];
+            CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $status', $info, false);
             if($status != 2) {
                 CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution_recur SET contribution_status_id = $status WHERE id = '".$r->id."'");
                 CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution SET contribution_status_id = $status WHERE contribution_recur_id = '".$r->id."'");
@@ -701,7 +697,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         
         return $ret;
     }
-    private function getStatus($info, $recurringProfileID)
+    private function getInfo($info, $recurringProfileID)
     {
         $payflow_query_array = array(
         'USER' => $info['user'],
@@ -742,23 +738,34 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
 
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $result_code', $result_code, false);
         
+        $ret = array();
+        $ret['failed_payments'] = $nvpArray['NUMFAILPAYMENTS'];
+        $ret['left'] = $nvpArray['PAYMENTSLEFT'];
+        $ret['next'] = $nvpArray['NEXTPAYMENT'];
+        
         if(!isset($nvpArray['STATUS'])) {
-            return 2;//pending
-        }
+            $ret['status'] = 2;//pending
+        } else {
         
-        switch ($nvpArray['STATUS']) {
-            case 'ACTIVE':
-                return 5;//IN PROGRESS
-            case 'VENDOR INACTIVE':
-                return 3; //Cancelled
-            case 'DEACTIVATED BY MERCHANT':
-                return 3;//Cancelled
-            case 'EXPIRED':
-                return 1;//Completed
-            case 'TOO MANY FAILURES':
-                return 4;//Failed
+            switch ($nvpArray['STATUS']) {
+                case 'ACTIVE':
+                    $ret['status'] = 5;//IN PROGRESS
+                    break;
+                case 'VENDOR INACTIVE':
+                    $ret['status'] = 3; //Cancelled
+                    break;
+                case 'DEACTIVATED BY MERCHANT':
+                    $ret['status'] = 3;//Cancelled
+                    break;
+                case 'EXPIRED':
+                    $ret['status'] = 1;//Completed
+                    break;
+                case 'TOO MANY FAILURES':
+                    $ret['status'] = 4;//Failed
+                    break;
+            }
         }
-        
+        return $ret;
     }
 
   function returnResult() {
