@@ -168,6 +168,10 @@ function payflowpro_submit_transaction($submiturl, $payflow_query) {
     return $responseData;
 }
 
+function payflow_date_to_iso($p)//03292013
+{
+    return substr($p, 4, 4) . "-" . substr($p, 2, 2) . "-" . substr($p, 0, 2);
+
   
 class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
   // (not used, implicit in the API, might need to convert?)
@@ -657,9 +661,17 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
             $info = $this->getInfo($this->getPaymentProcessorInfo($r->payment_processor_id), 
                                      $this->getProfileID($r->invoice_id));
             $status = $info['status'];
+            $fail = $info['failed_payments'];
+            $next = $info['next'];
+            $left = $info['left']; // it shouldn't be assigned to cycle day
             CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $status', $info, false);
             if($status != 2) {
-                CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution_recur SET contribution_status_id = $status WHERE id = '".$r->id."'");
+                CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution_recur SET 
+                contribution_status_id = $status, 
+                failure_count = $fail, 
+                next_sched_contribution = '$next',
+                cycle_day = $left
+                WHERE id = '".$r->id."'");
                 CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution SET contribution_status_id = $status WHERE contribution_recur_id = '".$r->id."'");
             }
         }
@@ -741,7 +753,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         $ret = array();
         $ret['failed_payments'] = $nvpArray['NUMFAILPAYMENTS'];
         $ret['left'] = $nvpArray['PAYMENTSLEFT'];
-        $ret['next'] = $nvpArray['NEXTPAYMENT'];
+        $ret['next'] = payflow_date_to_iso($nvpArray['NEXTPAYMENT']);
         
         if(!isset($nvpArray['STATUS'])) {
             $ret['status'] = 2;//pending
