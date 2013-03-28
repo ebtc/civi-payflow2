@@ -9,6 +9,166 @@
    | Modifications: Paul Walger & Thomas Hochstetter (www.ebtc-media.org), 2013 |
    +----------------------------------------------------------------------------+
   */
+  
+/*
+ * convert to a name/value pair (nvp) string
+ */
+function payflowpro_convert_to_nvp($payflow_query_array) {
+    foreach ($payflow_query_array as $key => $value) {
+        $payflow_query[] = $key . '[' . strlen($value) . ']=' . $value;
+    }
+    $payflow_query = implode('&', $payflow_query);
+
+    return $payflow_query;
+}
+/*
+    * Submit transaction using CuRL
+    * @submiturl string Url to direct HTTPS GET to
+    * @payflow_query value string to be posted
+    *
+    */
+function payflowpro_submit_transaction($submiturl, $payflow_query) {
+    /*
+        * Submit transaction using CuRL
+        */
+    // get data ready for API
+    $user_agent = "CiviCRM Payflow Api";
+    // Here's your custom headers; adjust appropriately for your setup:
+    $headers[] = "Content-Type: text/namevalue";
+    //or text/xml if using XMLPay.
+
+    //NOTE: we habe no $data
+    //$headers[] = "Content-Length : " . strlen($data);
+
+    // Length of data to be passed
+    // Here the server timeout value is set to 45, but notice
+    // below in the cURL section, the timeout
+    // for cURL is 90 seconds.  You want to make sure the server
+    // timeout is less, then the connection.
+    $headers[] = "X-VPS-Timeout: 45";
+    // random unique number  - the transaction is retried using this transaction ID
+    // in this function but if that doesn't work and it is re- submitted
+    // it is treated as a new attempt. PayflowPro doesn't allow
+    // you to change details (e.g. card no) when you re-submit
+    // you can only try the same details
+    $headers[] = "X-VPS-Request-ID: " . rand(1, 1000000000);
+    // optional header field
+    $headers[] = "X-VPS-VIT-Integration-Product: CiviCRM";
+    // other Optional Headers.  If used adjust as necessary.
+    // Name of your OS
+    //$headers[] = "X-VPS-VIT-OS-Name: Linux";
+    // OS Version
+    //$headers[] = "X-VPS-VIT-OS-Version: RHEL 4";
+    // What you are using
+    //$headers[] = "X-VPS-VIT-Client-Type: PHP/cURL";
+    // For your info
+    //$headers[] = "X-VPS-VIT-Client-Version: 0.01";
+    // For your info
+    //$headers[] = "X-VPS-VIT-Client-Architecture: x86";
+    // Application version
+    //$headers[] = "X-VPS-VIT-Integration-Version: 0.01";
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $submiturl);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_USERAGENT, $user_agent);
+    curl_setopt($ch, CURLOPT_HEADER, 1);
+    // tells curl to include headers in response
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    // return into a variable
+    curl_setopt($ch, CURLOPT_TIMEOUT, 90);
+    // times out after 90 secs
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'verifySSL'));
+    // this line makes it work under https
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payflow_query);
+    //adding POST data
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+    //verifies ssl certificate
+    curl_setopt($ch, CURLOPT_FORBID_REUSE, TRUE);
+    //forces closure of connection when done
+    curl_setopt($ch, CURLOPT_POST, 1);
+    //data sent as POST
+
+    // Try to submit the transaction up to 3 times with 5 second delay.  This can be used
+    // in case of network issues.  The idea here is since you are posting via HTTPS there
+    // could be general network issues, so try a few times before you tell customer there
+    // is an issue.
+
+    $i = 1;
+    while ($i++ <= 3) {
+        $responseData = curl_exec($ch);
+        $responseHeaders = curl_getinfo($ch);
+        if ($responseHeaders['http_code'] != 200) {
+        // Let's wait 5 seconds to see if its a temporary network issue.
+        sleep(5);
+        }
+        elseif ($responseHeaders['http_code'] == 200) {
+        // we got a good response, drop out of loop.
+        break;
+        }
+    }
+
+
+    /*
+        * Transaction submitted -
+        * See if we had a curl error - if so tell 'em and bail out
+        *
+        * NOTE: curl_error does not return a logical value (see its documentation), but
+        *       a string, which is empty when there was no error.
+        */
+
+    if ((curl_errno($ch) > 0) || (strlen(curl_error($ch)) > 0)) {
+        curl_close($ch);
+        $errorNum = curl_errno($ch);
+        $errorDesc = curl_error($ch);
+
+        //Paranoia - in the unlikley event that 'curl' errno fails
+        if ($errorNum == 0)
+        $errorNum = 9005;
+
+        // Paranoia - in the unlikley event that 'curl' error fails
+        if (strlen($errorDesc) == 0)
+        $errorDesc = "Connection to payment gateway failed";
+        if ($errorNum = 60) {
+            return self::errorExit($errorNum, "Curl error - " . $errorDesc .
+            " Try this link for more information http://curl.haxx.se/d
+                                            ocs/sslcerts.html");
+        }
+
+        return self::errorExit($errorNum, "Curl error - $errorDesc processor response = $processorResponse");
+    }
+
+    /*
+        * If null data returned - tell 'em and bail out
+        *
+        * NOTE: You will not necessarily get a string back, if the request failed for
+        *       any reason, the return value will be the boolean false.
+        */
+
+    if (($responseData === FALSE) || (strlen($responseData) == 0)) {
+        curl_close($ch);
+        return self::errorExit(9006, "Error: Connection to payment gateway failed - no data
+                                            returned. Gateway url set to $submiturl");
+    }
+
+    /*
+        * If gateway returned no data - tell 'em and bail out
+        */
+
+    if (empty($responseData)) {
+        curl_close($ch);
+        return self::errorExit(9007, "Error: No data returned from payment gateway.");
+    }
+
+    /*
+        * Success so far - close the curl and check the data
+        */
+
+    curl_close($ch);
+    return $responseData;
+}
+
+  
 class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
   // (not used, implicit in the API, might need to convert?)
   CONST
@@ -305,7 +465,7 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
     
     CRM_Utils_Hook::alterPaymentProcessorParams($this, $params, $payflow_query_array);
     
-    $payflow_query = $this->convert_to_nvp($payflow_query_array);
+    $payflow_query = payflowpro_convert_to_nvp($payflow_query_array);
     //some debug
     CRM_Core_Error::debug_var('$params', $params, false);
     CRM_Core_Error::debug_var('$payflow_query_array', $payflow_query_array, false);
@@ -322,7 +482,7 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
     // ie. url at payment processor to submit to.
     $submiturl = $this->_paymentProcessor['url_site'];
 
-    $responseData = self::submit_transaction($submiturl, $payflow_query);
+    $responseData = payflowpro_submit_transaction($submiturl, $payflow_query);
     /*
      * Payment succesfully sent to gateway - process the response now
      */
@@ -463,265 +623,92 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
     }
   }
   //end check config
-  /*
-     * convert to a name/value pair (nvp) string
-     */
-  function convert_to_nvp($payflow_query_array) {
-    foreach ($payflow_query_array as $key => $value) {
-      $payflow_query[] = $key . '[' . strlen($value) . ']=' . $value;
-    }
-    $payflow_query = implode('&', $payflow_query);
+ 
 
-    return $payflow_query;
-  }
-  /*
-     * Submit transaction using CuRL
-     * @submiturl string Url to direct HTTPS GET to
-     * @payflow_query value string to be posted
-     *
-     */
-  function submit_transaction($submiturl, $payflow_query) {
-    /*
-     * Submit transaction using CuRL
-     */
-
-    // get data ready for API
-    $user_agent = $_SERVER['HTTP_USER_AGENT'];
-    // Here's your custom headers; adjust appropriately for your setup:
-    $headers[] = "Content-Type: text/namevalue";
-    //or text/xml if using XMLPay.
-    
-    //NOTE: we habe no $data
-    //$headers[] = "Content-Length : " . strlen($data);
-    
-    // Length of data to be passed
-    // Here the server timeout value is set to 45, but notice
-    // below in the cURL section, the timeout
-    // for cURL is 90 seconds.  You want to make sure the server
-    // timeout is less, then the connection.
-    $headers[] = "X-VPS-Timeout: 45";
-    // random unique number  - the transaction is retried using this transaction ID
-    // in this function but if that doesn't work and it is re- submitted
-    // it is treated as a new attempt. PayflowPro doesn't allow
-    // you to change details (e.g. card no) when you re-submit
-    // you can only try the same details
-    $headers[] = "X-VPS-Request-ID: " . rand(1, 1000000000);
-    // optional header field
-    $headers[] = "X-VPS-VIT-Integration-Product: CiviCRM";
-    // other Optional Headers.  If used adjust as necessary.
-    // Name of your OS
-    //$headers[] = "X-VPS-VIT-OS-Name: Linux";
-    // OS Version
-    //$headers[] = "X-VPS-VIT-OS-Version: RHEL 4";
-    // What you are using
-    //$headers[] = "X-VPS-VIT-Client-Type: PHP/cURL";
-    // For your info
-    //$headers[] = "X-VPS-VIT-Client-Version: 0.01";
-    // For your info
-    //$headers[] = "X-VPS-VIT-Client-Architecture: x86";
-    // Application version
-    //$headers[] = "X-VPS-VIT-Integration-Version: 0.01";
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $submiturl);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_USERAGENT, $user_agent);
-    curl_setopt($ch, CURLOPT_HEADER, 1);
-    // tells curl to include headers in response
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    // return into a variable
-    curl_setopt($ch, CURLOPT_TIMEOUT, 90);
-    // times out after 90 secs
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'verifySSL'));
-    // this line makes it work under https
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $payflow_query);
-    //adding POST data
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-    //verifies ssl certificate
-    curl_setopt($ch, CURLOPT_FORBID_REUSE, TRUE);
-    //forces closure of connection when done
-    curl_setopt($ch, CURLOPT_POST, 1);
-    //data sent as POST
-
-    // Try to submit the transaction up to 3 times with 5 second delay.  This can be used
-    // in case of network issues.  The idea here is since you are posting via HTTPS there
-    // could be general network issues, so try a few times before you tell customer there
-    // is an issue.
-
-    $i = 1;
-    while ($i++ <= 3) {
-      $responseData = curl_exec($ch);
-      $responseHeaders = curl_getinfo($ch);
-      if ($responseHeaders['http_code'] != 200) {
-        // Let's wait 5 seconds to see if its a temporary network issue.
-        sleep(5);
-      }
-      elseif ($responseHeaders['http_code'] == 200) {
-        // we got a good response, drop out of loop.
-        break;
-      }
-    }
-
-
-    /*
-     * Transaction submitted -
-     * See if we had a curl error - if so tell 'em and bail out
-     *
-     * NOTE: curl_error does not return a logical value (see its documentation), but
-     *       a string, which is empty when there was no error.
-     */
-
-    if ((curl_errno($ch) > 0) || (strlen(curl_error($ch)) > 0)) {
-      curl_close($ch);
-      $errorNum = curl_errno($ch);
-      $errorDesc = curl_error($ch);
-
-      //Paranoia - in the unlikley event that 'curl' errno fails
-      if ($errorNum == 0)
-        $errorNum = 9005;
-
-      // Paranoia - in the unlikley event that 'curl' error fails
-      if (strlen($errorDesc) == 0)
-      $errorDesc = "Connection to payment gateway failed";
-        if ($errorNum = 60) {
-          return self::errorExit($errorNum, "Curl error - " . $errorDesc .
-            " Try this link for more information http://curl.haxx.se/d
-                                         ocs/sslcerts.html");
-      }
-
-      return self::errorExit($errorNum, "Curl error - $errorDesc processor response = $processorResponse");
-    }
-
-    /*
-     * If null data returned - tell 'em and bail out
-     *
-     * NOTE: You will not necessarily get a string back, if the request failed for
-     *       any reason, the return value will be the boolean false.
-     */
-
-    if (($responseData === FALSE) || (strlen($responseData) == 0)) {
-      curl_close($ch);
-      return self::errorExit(9006, "Error: Connection to payment gateway failed - no data
-                                           returned. Gateway url set to $submiturl");
-    }
-
-    /*
-     * If gateway returned no data - tell 'em and bail out
-     */
-
-    if (empty($responseData)) {
-      curl_close($ch);
-      return self::errorExit(9007, "Error: No data returned from payment gateway.");
-    }
-
-    /*
-     * Success so far - close the curl and check the data
-     */
-
-    curl_close($ch);
-    return $responseData;
-  }
-  //end submit_transaction
-  
-  function getRecurringTransactionStatus($recurringProfileID, $processorID) {
-    if (!defined('CURLOPT_SSLCERT')) {
-      CRM_Core_Error::fatal(ts('PayFlowPro requires curl with SSL support'));
-    }
-
-    /*
-     * define variables for connecting with the gateway
-     */
-
-
-    //if you have not set up a separate user account the vendor name is used as the username
-    if (!$this->_paymentProcessor['subject']) {
-      $user = $this->_paymentProcessor['user_name'];
-    }
-    else {
-      $user = $this->_paymentProcessor['subject'];
-    }
-    //$recurringProfileID = "RT0000000001";
-    //     c  $trythis =        $this->getRecurringTransactionStatus($recurringProfileID,17);
-
-
-    /*
-     * Create the array of variables to be sent to the processor from the $params array
-     * passed into this function
-     *
-     */
-
-    $payflow_query_array = array(
-      'USER' => $user,
-      'VENDOR' => $this->_paymentProcessor['user_name'],
-      'PARTNER' => $this->_paymentProcessor['signature'],
-      'PWD' => $this->_paymentProcessor['password'],
-      // C - Direct Payment using credit card
-      'TENDER' => 'C',
-      // A - Authorization, S - Sale
-      'TRXTYPE' => 'R',
-      'ACTION' => 'I',
-      //A for add recurring
-      //(M-modify,C-cancel,R-reactivate,
-      //I-inquiry,P-payment
-      'ORIGPROFILEID' => $recurringProfileID,
-      'PAYMENTHISTORY' => 'Y',
-    );
-
-    $payflow_query = $this->convert_to_nvp($payflow_query_array);
-    echo $payflow_query;
-    $submiturl = $this->_paymentProcessor['url_site'];
-    //ie. url at payment processor to submit to.
-    $responseData = self::submit_transaction($submiturl, $payflow_query);
-    
-    /*
-     * Payment succesfully sent to gateway - process the response now
-     */
-    $result = strstr($responseData, "RESULT");
-    $nvpArray = array();
-    while (strlen($result)) {
-      // name
-      $keypos = strpos($result, '=');
-      $keyval = substr($result, 0, $keypos);
-      // value
-      $valuepos = strpos($result, '&') ? strpos($result, '&') : strlen($result);
-      $valval = substr($result, $keypos + 1, $valuepos - $keypos - 1);
-      // decoding the respose
-      $nvpArray[$keyval] = $valval;
-      $result = substr($result, $valuepos + 1, strlen($result));
-    }
-    // get the result code to validate.
-    $result_code = $nvpArray['RESULT'];
-    print_r($responseData);
-
-    //RESPMSG=Invalid Profile ID: Invalid recurring profile ID
-    //RT0000000001
-  }
 }
-
 
 /**
  * A PHP cron script
  */
 class CRM_CRM_Core_Payment_PayflowPro_Update {
 
-  var $returnMessages = array();
-  var $returnError = 0;
+    var $returnMessages = array();
+    var $returnError = 0;
+    
+    var $user = "";
+    var $username = "";
+    var $signature = "";
+    var $password = "";
+    var $url = "";
+    public function __construct($params) {
 
-  public function __construct($params) {
+        foreach ($params as $name => $value) {
+            $this->$name = $value;
+        }
 
-    foreach ($params as $name => $value) {
-      $this->$name = $value;
+        // fixme: more params verification
     }
 
-    // fixme: more params verification
-  }
+    public function run() {
+        $config = &CRM_Core_Config::singleton();
+        CRM_Core_Error::debug_log_message('run CRM_CRM_Core_Payment_PayflowPro_Update', false);
+        
+        if (!defined('CURLOPT_SSLCERT')) {
+            CRM_Core_Error::fatal(ts('PayFlowPro requires curl with SSL support'));
+        }
+        //TODO: get the configuration
+        //TODO: foreach recurring stuff in civicrm do getStatus and update
 
-  public function run() {
-    $config = &CRM_Core_Config::singleton();
-    CRM_Core_Error::debug_log_message('run CRM_CRM_Core_Payment_PayflowPro_Update', false);
-    return $this->returnResult();
-  }
+    
+        return $this->returnResult();
+    }
+    private function getStatus($recurringProfileID)
+    {
+        $payflow_query_array = array(
+        'USER' => $this->user,
+        'VENDOR' => $this->username,
+        'PARTNER' => $this->signature,
+        'PWD' => $this->password,
+        // C - Direct Payment using credit card
+        'TENDER' => 'C',
+        // A - Authorization, S - Sale
+        'TRXTYPE' => 'R',
+        'ACTION' => 'I',
+        //A for add recurring
+        //(M-modify,C-cancel,R-reactivate,
+        //I-inquiry,P-payment
+        'ORIGPROFILEID' => $recurringProfileID,
+        'PAYMENTHISTORY' => 'Y',
+        );
 
+        $payflow_query = payflowpro_convert_to_nvp($payflow_query_array);
+        CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $payflow_query', $payflow_query, false);
+        $responseData = payflowpro_submit_transaction($this->url, $payflow_query);
+        CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $responseData', $responseData, false);
+        /*
+        * Payment succesfully sent to gateway - process the response now
+        */
+        $result = strstr($responseData, "RESULT");
+        $nvpArray = array();
+        while (strlen($result)) {
+            // name
+            $keypos = strpos($result, '=');
+            $keyval = substr($result, 0, $keypos);
+            // value
+            $valuepos = strpos($result, '&') ? strpos($result, '&') : strlen($result);
+            $valval = substr($result, $keypos + 1, $valuepos - $keypos - 1);
+            // decoding the respose
+            $nvpArray[$keyval] = $valval;
+            $result = substr($result, $valuepos + 1, strlen($result));
+        }
+        // get the result code to validate.
+        $result_code = $nvpArray['RESULT'];
+
+        CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $result_code', $result_code, false);
+
+        //RESPMSG=Invalid Profile ID: Invalid recurring profile ID
+        //RT0000000001
+    }
 
   function returnResult() {
     $result             = array();
