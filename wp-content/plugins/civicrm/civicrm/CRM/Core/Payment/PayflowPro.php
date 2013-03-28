@@ -708,6 +708,8 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
     }
     private function getInfo($info, $recurringProfileID)
     {
+        CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $info', $info, false);
+        CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $info', $recurringProfileID, false);
         $payflow_query_array = array(
         'USER' => $info['user'],
         'VENDOR' => $info['username'],
