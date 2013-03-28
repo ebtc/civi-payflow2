@@ -661,11 +661,14 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         while ($r->fetch()) {
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
             $proc = $this->getPaymentProcessorInfo($r->payment_processor_id);
-            $info = $this->getInfo($proc, $this->getProfileID($r->invoice_id));
+            CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
+            $info = $this->getRecurInfo($proc, $this->getProfileID($r->invoice_id));
+            CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
             $status = $info['status'];
             $fail = $info['failed_payments'];
             $next = $info['next'];
             $left = $info['left']; // it shouldn't be assigned to cycle day
+            CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
             CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $status', $info, false);
             if($status != 2) {
                 CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution_recur SET contribution_status_id = '$status', failure_count = '$fail', next_sched_contribution = '$next', cycle_day ='$left' WHERE id = '".$r->id."'");
@@ -706,7 +709,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         
         return $ret;
     }
-    private function getInfo($info, $recurringProfileID)
+    private function getRecurInfo($info, $recurringProfileID)
     {
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $info', $info, false);
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $info', $recurringProfileID, false);
