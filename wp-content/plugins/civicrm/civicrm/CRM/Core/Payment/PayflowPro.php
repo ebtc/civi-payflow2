@@ -661,9 +661,9 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         while ($r->fetch()) {
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
             $proc = $this->getPaymentProcessorInfo($r->payment_processor_id);
-            CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
+            CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update get recur info', false);
             $info = $this->getRecurInfo($proc, $this->getProfileID($r->invoice_id));
-            CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
+            CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update ok', false);
             $status = $info['status'];
             $fail = $info['failed_payments'];
             $next = $info['next'];
