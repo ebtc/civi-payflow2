@@ -523,12 +523,14 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
         $params['trxn_result_code'] = $nvpArray['AUTHCODE'] . "-Cvv2:" . $nvpArray['CVV2MATCH'] . "-avs:" . $nvpArray['AVSADDR'];
 
         if ($params['is_recur'] == TRUE) {
-            $params['recur_trxn_id'] = $nvpArray['PROFILEID']; 
+            $params['recur_trxn_id'] = $nvpArray['PROFILEID'];
+            $trxn =  $params['trxn_id'];
+            $profile = $params['recur_trxn_id'];
             //because we need the profile id
             CRM_Core_DAO::executeQuery("
             INSERT INTO civicrm_payflowpro_recur (
             trxn_id, profile_id
-            ) VALUES ('$params['trxn_id']', '$params['recur_trxn_id']')");
+            ) VALUES ('$trxn', '$profile')");
         }
   
        
