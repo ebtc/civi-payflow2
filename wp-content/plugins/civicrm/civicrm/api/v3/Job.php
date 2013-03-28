@@ -507,7 +507,7 @@ function civicrm_api3_job_payflowpro($params) {
 
   // available params: currently none
 
-  require_once 'CRM/Core/Payment/PayflowPro';
+  require_once 'CRM/Core/Payment/PayflowPro.php';
   $gc = new CRM_CRM_Core_Payment_PayflowPro_Update($params);
 
 
