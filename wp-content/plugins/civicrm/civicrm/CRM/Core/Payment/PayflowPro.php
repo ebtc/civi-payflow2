@@ -660,7 +660,11 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         $r = CRM_Core_DAO::executeQuery("SELECT id,trxn_id,invoice_id,payment_processor_id FROM civicrm_contribution_recur WHERE contribution_status_id='2'");
         while ($r->fetch()) {
             $info = $this->getPaymentProcessorInfo($r->payment_processor_id);
-            $status = $this->getStatus($info, $this->getProfileID($r->trxn_id));
+            $status = $this->getStatus($info, $this->getProfileID($r->invoice_id));
+            
+            if($status != 2) {
+                CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution_recur SET contribution_status_id = $status WHERE invoice_id = '$r->invoice_id'");
+            }
         }
     
         return $this->returnResult();
@@ -736,6 +740,11 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
         $result_code = $nvpArray['RESULT'];
 
         CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $result_code', $result_code, false);
+        
+        if(!isset($nvpArray['STATUS'])) {
+            return 2;//pending
+        }
+        
         switch ($nvpArray['STATUS']) {
             case 'ACTIVE':
                 return 5;//IN PROGRESS
