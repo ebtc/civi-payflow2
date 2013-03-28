@@ -358,15 +358,9 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
       $interval = $params['frequency_interval']. " ". $params['frequency_unit'];
       switch ($interval) {
         case '1 week':
-          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m"), date("d") + 7,
-            date("Y")
-          );
-          $params['end_date'] = mktime(0, 0, 0, date("m"), date("d") + (7 * $payflow_query_array['TERM']),
-            date("Y")
-          );
-          $payflow_query_array['START'] = date('mdY', $params['next_sched_contribution'
-            ]
-          );
+          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m"), date("d") + 7, date("Y"));
+          $params['end_date'] = mktime(0, 0, 0, date("m"), date("d") + (7 * $payflow_query_array['TERM']),date("Y"));
+          $payflow_query_array['START'] = date('mdY', $params['next_sched_contribution']);
           $payflow_query_array['PAYPERIOD'] = "WEEK";
           $params['frequency_unit'] = "week";
           $params['frequency_interval'] = 1;
@@ -382,14 +376,9 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
           break;
 
         case '4 weeks':
-          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m"), date("d") + 28, date("Y")
-          );
-          $params['end_date'] = mktime(0, 0, 0, date("m"), date("d") + (28 * $payflow_query_array['TERM'])
-            , date("Y")
-          );
-          $payflow_query_array['START'] = date('mdY', $params['next_sched_contribution'
-            ]
-          );
+          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m"), date("d") + 28, date("Y"));
+          $params['end_date'] = mktime(0, 0, 0, date("m"), date("d") + (28 * $payflow_query_array['TERM']), date("Y"));
+          $payflow_query_array['START'] = date('mdY', $params['next_sched_contribution']);
           $payflow_query_array['PAYPERIOD'] = "FRWK";
           $params['frequency_unit'] = "week";
           $params['frequency_interval'] = 4;
@@ -399,10 +388,7 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
           $params['next_sched_contribution'] = mktime(0, 0, 0, date("m"), //START.tho.280313: date() + 1 del, so payment starts today
             date("d") + 1, date("Y") //START.tho.280313: day + 1, so API is happy
           );
-          $params['end_date'] = mktime(0, 0, 0, date("m") +
-            (1 * $payflow_query_array['TERM']),
-            date("d"), date("Y")
-          );
+          $params['end_date'] = mktime(0, 0, 0, date("m") +(1 * $payflow_query_array['TERM']),date("d"), date("Y"));
           $payflow_query_array['START'] = date('mdY', $params['next_sched_contribution']);
           $payflow_query_array['PAYPERIOD'] = "MONT";
           $params['frequency_unit'] = "month";
@@ -410,13 +396,8 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
           break;
 
         case '3 months':
-          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m") + 3, date("d")
-            , date("Y")
-          );
-          $params['end_date'] = mktime(0, 0, 0, date("m") +
-            (3 * $payflow_query_array['TERM']),
-            date("d"), date("Y")
-          );
+          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m") + 3, date("d"), date("Y"));
+          $params['end_date'] = mktime(0, 0, 0, date("m") +(3 * $payflow_query_array['TERM']),date("d"), date("Y"));
           $payflow_query_array['START'] = date('mdY', $params['next_sched_contribution']
           );
           $payflow_query_array['PAYPERIOD'] = "QTER";
@@ -425,9 +406,7 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
           break;
 
         case '6 months':
-          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m") + 6, date("d"),
-            date("Y")
-          );
+          $params['next_sched_contribution'] = mktime(0, 0, 0, date("m") + 6, date("d"),date("Y"));
           $params['end_date'] = mktime(0, 0, 0, date("m") +
             (6 * $payflow_query_array['TERM']),
             date("d"), date("Y")
@@ -523,10 +502,8 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
 
         if ($params['is_recur'] == '1') {
             $params['trxn_id'] = $nvpArray['PROFILEID'];
-            $invoice =  $params['invoiceID'];
-            $profile = $nvpArray['PROFILEID'];
             //because we need the profile id
-            CRM_Core_DAO::executeQuery("INSERT INTO civicrm_payflowpro_recur (invoice_id, profile_id) VALUES ('$invoice', '$profile')");
+            CRM_Core_DAO::executeQuery("INSERT INTO civicrm_payflowpro_recur (invoice_id, profile_id) VALUES ('".$params['invoiceID']."', '".$nvpArray['PROFILEID']."')");
         }
   
         CRM_Core_Error::debug_var('$params', $params, false);
@@ -657,7 +634,10 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
             CRM_Core_Error::fatal(ts('PayFlowPro requires curl with SSL support'));
         }
         
-        $r = CRM_Core_DAO::executeQuery("SELECT id,trxn_id,invoice_id,payment_processor_id FROM civicrm_contribution_recur WHERE contribution_status_id='2' OR contribution_status_id='5'");
+        $r = CRM_Core_DAO::executeQuery(
+        "SELECT id,trxn_id,invoice_id,payment_processor_id 
+        FROM civicrm_contribution_recur 
+        WHERE contribution_status_id='2' OR contribution_status_id='5'");
         while ($r->fetch()) {
             $info = $this->getRecurInfo($this->getPaymentProcessorInfo($r->payment_processor_id), $this->getProfileID($r->invoice_id));
             $status = $info['status'];
@@ -668,8 +648,18 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
             CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $status', $info, false);
             if($status != 2) {
-                CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution_recur SET contribution_status_id = '$status', failure_count = '$fail', next_sched_contribution = '$next', cycle_day ='$left' WHERE id = '".$r->id."'");
-                CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution SET contribution_status_id = $status WHERE contribution_recur_id = '".$r->id."'");
+                CRM_Core_DAO::executeQuery(
+                "UPDATE civicrm_contribution_recur 
+                SET contribution_status_id = '$status', 
+                failure_count = '$fail', 
+                next_sched_contribution = '$next', 
+                cycle_day ='$left' 
+                WHERE id = '".$r->id."'");
+                
+                CRM_Core_DAO::executeQuery(
+                "UPDATE civicrm_contribution 
+                SET contribution_status_id = $status 
+                WHERE contribution_recur_id = '".$r->id."'");
             }
         }
     
