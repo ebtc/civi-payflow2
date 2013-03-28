@@ -643,7 +643,7 @@ class CRM_CRM_Core_Payment_PayflowPro_Update {
 
             CRM_Core_Error::debug_log_message('CRM_CRM_Core_Payment_PayflowPro_Update checking ' . $r->invoice_id, false);
             CRM_Core_Error::debug_var('CRM_CRM_Core_Payment_PayflowPro_Update $status', $info, false);
-            if($ret['result'] == '0' && $info['status'] != 2) {
+            if($info['result'] == '0' && $info['status'] != 2) {
                 $fail = $info['failed_payments'];
                 $next = $info['next'];
                 $left = $info['left']; // it shouldn't be assigned to cycle day
