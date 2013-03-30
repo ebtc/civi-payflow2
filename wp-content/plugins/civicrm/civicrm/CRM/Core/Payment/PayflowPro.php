@@ -504,11 +504,8 @@ class CRM_Core_Payment_PayflowPro extends CRM_Core_Payment {
             $params['trxn_id'] = $nvpArray['PROFILEID'];
             //because we need the profile id
             CRM_Core_DAO::executeQuery("INSERT INTO 
-            civicrm_payflowpro_recur (invoice_id, profile_id, TRXPNREF, PNREF) 
-            VALUES ('".$params['invoiceID']."', '".
-            $nvpArray['PROFILEID']."', '".
-            $nvpArray['PNREF']."', '".
-            $nvpArray['TRXPNREF']."')");
+            civicrm_payflowpro_recur (invoice_id, profile_id) 
+            VALUES ('".$params['invoiceID']."', '".$nvpArray['PROFILEID']."')");
         }
   
         CRM_Core_Error::debug_var('$params', $params, false);
